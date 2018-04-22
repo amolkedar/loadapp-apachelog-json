@@ -1,0 +1,12 @@
+{
+  "name": "loadapp-apachelog-json",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "Amol Kedar",
+  "license": "ISC",
+  "dependencies": {
+    "countryjs": "^1.8.0",
+    "geoip-lite": "^1.2.1"
+  }
+}

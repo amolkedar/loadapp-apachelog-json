@@ -1,6 +1,9 @@
 'use strict';
 console.log('Loading function');
 
+let geoip = require('geoip-lite');
+let countries = require('countryjs');
+
 /* Apache Log format parser */
 const parser = /^([\d.]+) (\S+) (\S+) \[([\w:/]+)(\s[\+\-]\d{4}){0,1}\] "(.+?)" (\d{3}) (\d+) (\S+) "(.+?)"/;
 
@@ -29,7 +32,8 @@ exports.handler = (event, context, callback) => {
                 authuser: match[3],
                 response: safeStringToInt(match[7]),
                 bytes: safeStringToInt(match[8]),
-                browser: match[10]         
+                browser: match[10] ,
+                tags: []        
             };
 
             if (match[6] && match[6].split(' ').length > 1) {
@@ -59,7 +63,26 @@ exports.handler = (event, context, callback) => {
                 }
             }
 
-            console.log('HOST IP is :' + JSON.stringify(result.host));            
+            console.log('HOST IP is :' + JSON.stringify(result.host)); 
+
+            // geoip lookup
+            let resolvedIp = geoip.lookup(result.host);
+            result.geoip = resolvedIp;
+            if (resolvedIp) {
+                result.tags.push('geoip_looked_up_success');
+                result.geoip.countryName = countries.name(result.geoip.country);
+
+                // the GeoJSON format has the longitude before the latitude in the array, we must change
+                // geoip.ll into geoip.location object
+                result.geoip.location = {
+                    lat: result.geoip.ll[0],
+                    lon: result.geoip.ll[1]
+                };
+                delete result.geoip.ll;
+            } else {
+                result.tags.push('geoip_looked_up_fail');
+            }
+            console.log('GEO IP is :' + JSON.stringify(result.geoip)); 
             console.log('BIG data is:' + JSON.stringify(result));
             const payload = (Buffer.from(JSON.stringify(result), 'utf8')).toString('base64');
             success++;
